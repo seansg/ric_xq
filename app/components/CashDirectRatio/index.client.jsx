@@ -1,104 +1,111 @@
 import { useCallback, useState, useRef } from 'react'
-import CSVReader from 'react-csv-reader'
 import lodash from 'lodash'
-import Papa from 'papaparse'
-import dealAmount from './data/dealAmount'
 import DownloadProvider from '~c/DownloadProvider'
 import Chart from './Chart'
 import { toDecimal } from '~/utils';
+import axios from 'axios'
 
-// const res = await axios.get('https://www.twse.com.tw/pcversion/exchangeReport/BFIAMU?date=20230523')
-//const { data } = await axios.get('https://www.twse.com.tw/exchangeReport/MI_INDEX?date=20230524&type=MS&response=json')
+const calculCashDirectRatio = (csv, date, dealAmount ) => {
+  const total = toDecimal(dealAmount[date])
 
-const calculCashDirectRatio = (csv, { name }) => {
-  const filtered = csv.filter((r, i) => ![0, 1, 32, 33, 34, 35].includes(i))
-  console.log(filtered, name, dealAmount[name])
-  const total = toDecimal(dealAmount[name])
-
-  filtered.forEach(row => {
+  csv.forEach(row => {
     row.push(total.toString())
     row.push(toDecimal(row[2]).div(total).times(100).toString())
   })
-  return filtered
+  return csv
+}
+
+const todayDate = new Date().toISOString().slice(0, 10).replaceAll('-', '')
+
+const getTotalAmount = async (closeDays) => {
+  const dataset = {}
+  let i = 0
+  while (Object.keys(dataset).length < closeDays) {
+    const { data } = await axios.get(`https://www.twse.com.tw/exchangeReport/MI_INDEX?date=${todayDate - i}&type=MS&response=json`)
+    if (data.date) {
+      dataset[data.date] = toDecimal(data.data7[0][1]).toString()
+    }
+    i++
+  }
+  return dataset
+}
+
+const getTotalStocks = async (closeDays, dealAmount) => {
+  const dataset = {}
+  let i = 0
+  while (Object.keys(dataset).length < closeDays) {
+    const { data } = await axios.get(`https://www.twse.com.tw/pcversion/exchangeReport/BFIAMU?date=${todayDate - i}&type=MS&response=json`)
+    if (data.date) {
+
+      dataset[data.date] = calculCashDirectRatio(data.data, data.date, dealAmount)
+    }
+    i++
+  }
+  return dataset
 }
 
 const CashDirectRatio = () => {
   const [stat, setStat] = useState([])
-  const inputRef = useRef(null)
-  const totalDays = useRef(0)
+  const [closeDays, setCloseDays] = useState(3)
+  const handleChangeDays = useCallback((e) => {
+    setCloseDays(e.target.value)
+  }, [])
 
-  const handleReader = useCallback(async (csv, fileInfo, file) => {
-    const curData = calculCashDirectRatio(csv, file)
+  const onClick = useCallback(async () => {
+    const dealAmount = await getTotalAmount(closeDays)
+    const stocks = await getTotalStocks(closeDays, dealAmount)
+
+    const curData = calculCashDirectRatio(stocks[todayDate], todayDate, dealAmount)
+
     const cur = lodash.transform(curData, (sub, row) => {
       sub[row[0]] = row[row.length - 1]
       return sub
     }, {})
 
-    const colorBar = lodash.transform(curData, (obj, row) => {
+    const colorBar = lodash.transform(stocks[todayDate], (obj, row) => {
       obj[row[0]] = row[4] > 0 ? '#ff0000' : '#008000'
       return obj
     }, {})
 
-    if (inputRef.current) {
-      const results = await Promise.all(Array.from(inputRef.current.files).map(file =>
-        new Promise((resolve) => {
-          return Papa.parse(file, {
-            encoding: 'big5',
-            download: true,
-            complete: (input) => {
-              const records = input.data;
-              const r = calculCashDirectRatio(records, file)
-              resolve(r)
-            }
-          })
-        })))
-      totalDays.current = results.length
+    const trans = Object.keys(stocks).sort().map((date => lodash.transform(stocks[date], (sub, row) => {
+      sub[row[0]] = row[row.length - 1]
+      return sub
+    }, {})))
 
-      const trans = results.map((result => lodash.transform(result, (sub, row) => {
-        sub[row[0]] = row[row.length - 1]
-        return sub
-      }, {})))
-      console.log('trans', trans)
-      const sum = lodash.transform(trans, (obj, tran) => {
-        Object.keys(tran).forEach(k => {
-          if (!obj[k]) obj[k] = toDecimal('0')
-          obj[k] = obj[k].add(toDecimal(tran[k]))
-        })
-        return obj
-      }, {})
-      console.log('sum', sum)
+    const sum = lodash.transform(trans, (obj, tran) => {
+      Object.keys(tran).forEach(k => {
+        if (!obj[k]) obj[k] = toDecimal('0')
+        obj[k] = obj[k].add(toDecimal(tran[k]))
+      })
+      return obj
+    }, {})
 
-      const avg = lodash.transform(Object.keys(sum), (obj, k) => {
-        obj[k] = sum[k].div(results.length)
-      }, {})
-      // console.log(avg)
 
-      const dif = lodash.transform(Object.keys(avg), (obj, k) => {
-        const val = toDecimal(cur[k]).minus(avg[k]).div(avg[k]).times(100)
-        if (Math.abs(val) > 10) {
-          obj[k] = val
-        }
-      }, {})
+    const avg = lodash.transform(Object.keys(sum), (obj, k) => {
+      obj[k] = sum[k].div(closeDays)
+    }, {})
 
-      const sorted = Object.entries(dif).sort((a, b) => b[1] - a[1]);
+    const dif = lodash.transform(Object.keys(avg), (obj, k) => {
+      const val = toDecimal(cur[k]).minus(avg[k]).div(avg[k]).times(100)
+      if (Math.abs(val) > 10) {
+        obj[k] = val
+      }
+    }, {})
 
-      const sortedTrans = lodash.transform(sorted, (ary, row) => {
-        ary.push({
-          key: row[0].replace('類指數', ''),
-          value: row[1],
-          color: colorBar[row[0]]
-        })
-        return ary
-      }, [])
-      console.log(sortedTrans)
-      setStat(sortedTrans)
-    }
+    const sorted = Object.entries(dif).sort((a, b) => b[1] - a[1]);
 
-  }, [])
+    const sortedTrans = lodash.transform(sorted, (ary, row) => {
+      ary.push({
+        key: row[0].replace('類指數', ''),
+        value: row[1],
+        color: colorBar[row[0]]
+      })
+      return ary
+    }, [])
+    setStat(sortedTrans)
+  }, [closeDays])
 
-  const todayDate = new Date().toISOString().slice(0, 10).replaceAll('-', '');
-
-  const filename = `${todayDate} 近${totalDays.current}日成交比重差 %`
+  const filename = `${todayDate} 近${closeDays}日成交比重差 %`
 
   const data = {
     datasets: [
@@ -117,19 +124,32 @@ const CashDirectRatio = () => {
   };
 
   return (
-    <>
-      <input name='files' ref={inputRef} type='file' multiple="multiple" />
-      <CSVReader
-        onFileLoaded={handleReader}
-        fileEncoding='big5'
-      />
+    <div className='m-5'>
+      <div className='flex items-center text-5xl font-extrabold'>成交比重差</div>
+      <div className='m-5 w-100 flex items-end'>
+        <div>
+          <label htmlFor="days" className="block mb-2 text-sm font-medium text-gray-900">近幾日</label>
+          <input type="number" id="days"
+            className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+            placeholder="3"
+            step='1'
+            min='1'
+            required
+            onChange={handleChangeDays}
+            value={closeDays}
+          />
+        </div>
+        <div className='m-2.5 mb-0'>
+          <button className='px-5 py-2.5 bg-[#1da1f2] text-white rounded' onClick={onClick}>Fetch Data</button>
+        </div>
+      </div>
       {
         stat.length > 0 &&
         <DownloadProvider filename={filename}>
           <Chart data={data} />
         </DownloadProvider>
       }
-    </>
+    </div>
   )
 }
 
