@@ -3,7 +3,7 @@ export default {
   theme: {
     extend: {},
   },
-  darkMode: 'class',
+  darkMode: 'media',
   plugins: [
     require('flowbite/plugin')
   ]
