@@ -8,11 +8,11 @@ export const useWaterMarkContext = () => useContext(WaterMarkContext)
 const WaterMarkProvider = ({ children, content = `🪙 Dr.Provision🪙` }) => {
   return (
     <WaterMarkContext.Provider value={{}}>
-      <WaterMark content={content} font='40px Microsoft Yahei'>
-        {children}
-      </WaterMark>
-    </WaterMarkContext.Provider>
-  )
+        <WaterMark content={content} font='40px Microsoft Yahei'>
+          {children}
+        </WaterMark>
+      </WaterMarkContext.Provider>
+    )
 }
 
 export default WaterMarkProvider

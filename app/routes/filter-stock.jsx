@@ -1,12 +1,12 @@
-import { lazy, Suspense } from "react";
+import { ClientOnly } from "remix-utils";
 
-const FilterStock = lazy(() => import("~/components/FilterStock"));
+import FilterStock from '~/components/FilterStock/index.client'
 
 const FilterStockRoute = () => {
   return (
-    <Suspense fallback={null}>
-      <FilterStock />
-    </Suspense>
+    <ClientOnly fallback={<div>Loading...</div>}>
+      {() => <FilterStock />}
+    </ClientOnly>
   )
 }
 
