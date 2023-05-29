@@ -1,5 +1,5 @@
 import stylesheet from "~/tailwind.css";
-
+import 'flowbite';
 import {
   Links,
   LiveReload,
