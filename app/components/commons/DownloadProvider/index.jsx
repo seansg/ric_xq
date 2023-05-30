@@ -33,10 +33,8 @@ const DownloadProvider = ({ children, filename }) => {
   }, [])
 
   return (
-    <DownloadContext.Provider value={{ handleDownload, filenameRef }}>
-      <div ref={downloadContextRef}>
-        {children}
-      </div>
+    <DownloadContext.Provider value={{ handleDownload, filenameRef, downloadContextRef }}>
+      {children}
     </DownloadContext.Provider>
   )
 }

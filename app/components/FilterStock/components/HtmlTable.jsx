@@ -1,7 +1,6 @@
 import PropTypes from 'prop-types'
 import { useState } from 'react'
 import WaterMarkProvider from '~/components/commons/WaterMarkProvider'
-import { useRef } from 'react'
 import _ from 'lodash'
 import { useDownloadContext, PngBtn } from '~c/DownloadProvider'
 import TitleField from './TitleField'
@@ -9,8 +8,7 @@ import lodash from 'lodash'
 
 const HtmlTable = ({ data }) => {
   const [selectTitle, setSelectTitle] = useState('')
-  const tableRef = useRef(null)
-  const { handleDownload, filenameRef } = useDownloadContext()
+  const { handleDownload, filenameRef, downloadContextRef } = useDownloadContext()
   const todayDate = new Date().toISOString().slice(0, 10).replaceAll('-', '');
   filenameRef.current = `${['Ric', todayDate, selectTitle].filter((v) => !lodash.isEmpty(v)).join('_')}`
 
@@ -22,7 +20,7 @@ const HtmlTable = ({ data }) => {
       </div>
 
       <div className='mx-auto' key={new Date().getTime()}>
-        <div className="flex flex-col text-center" style={{ backgroundColor: '#d6d6d6'}} ref={tableRef}>
+        <div className="flex flex-col text-center" style={{ backgroundColor: '#d6d6d6' }} ref={downloadContextRef}>
           <div>{selectTitle}</div>
           <div className='mb-2.5'>{ data.date }</div>
 
@@ -67,7 +65,6 @@ HtmlTable.defaultProps = {
 
 HtmlTable.propTypes = {
   data: PropTypes.object,
-  tableRef: PropTypes.object.isRequired,
   parseCol: PropTypes.func,
 }
 

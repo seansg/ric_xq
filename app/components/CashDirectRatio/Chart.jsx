@@ -23,16 +23,18 @@ ChartJS.register(
 );
 
 const Chart = ({ data }) => {
-  const { handleDownload } = useDownloadContext()
+  const { handleDownload, downloadContextRef } = useDownloadContext()
 
   return (
     <>
       <PngBtn onClick={handleDownload} />
-      <WaterMarkProvider>
-        <div className='h-screen'>
-          <Bar options={options} data={data} />
-        </div>
-      </WaterMarkProvider>
+      <div ref={downloadContextRef}>
+        <WaterMarkProvider>
+          <div className='h-screen'>
+            <Bar options={options} data={data} />
+          </div>
+        </WaterMarkProvider>
+      </div>
     </>
   )
 }
