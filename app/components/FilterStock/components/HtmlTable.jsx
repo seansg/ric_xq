@@ -1,22 +1,29 @@
 import PropTypes from 'prop-types'
 import { useState } from 'react'
 import WaterMarkProvider from '~/components/commons/WaterMarkProvider'
+import { useRef } from 'react'
+import _ from 'lodash'
+import { useDownloadContext, PngBtn } from '~c/DownloadProvider'
+import TitleField from './TitleField'
+import lodash from 'lodash'
 
-const HtmlTable = ({ data, tableRef, title }) => {
+const HtmlTable = ({ data }) => {
   const [selectTitle, setSelectTitle] = useState('')
+  const tableRef = useRef(null)
+  const { handleDownload, filenameRef } = useDownloadContext()
+  const todayDate = new Date().toISOString().slice(0, 10).replaceAll('-', '');
+  filenameRef.current = `${['Ric', todayDate, selectTitle].filter((v) => !lodash.isEmpty(v)).join('_')}`
 
   return (
-    <>
-      <select onChange={(e) => setSelectTitle(e.target.value)}>
-        <option></option>
-        <option>激戰區-百元</option>
-        <option>激戰區-非百元</option>
-        <option>上班族首選-多排</option>
-        <option>成長型-價投</option>
-      </select>
+    <div className="flex justify-content-center flex-col">
+      <PngBtn onClick={handleDownload} />
+      <div className='mx-5 mb-2.5'>
+       <TitleField onChange={setSelectTitle} />
+      </div>
+
       <div className='mx-auto' key={new Date().getTime()}>
         <div className="flex flex-col text-center" style={{ backgroundColor: '#d6d6d6'}} ref={tableRef}>
-          <div>{title} {selectTitle}</div>
+          <div>{selectTitle}</div>
           <div className='mb-2.5'>{ data.date }</div>
 
           <WaterMarkProvider>
@@ -50,8 +57,7 @@ const HtmlTable = ({ data, tableRef, title }) => {
           </div>
         </div>
       </div>
-
-    </>
+    </div>
   )
 }
 

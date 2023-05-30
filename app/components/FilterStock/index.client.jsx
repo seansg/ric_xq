@@ -2,11 +2,10 @@ import { useState } from 'react'
 import _ from 'lodash'
 
 import ParseCsv from './components/ParseCsv'
-import TableDownloader from './components/TableDownloader'
+import HtmlTable from './components/HtmlTable'
+import DownloadProvider from '../commons/DownloadProvider'
 
 const initData = {
-  title: '',
-  filename: '',
   date: '',
   headers: [],
   rows: [[]],
@@ -18,7 +17,9 @@ const FilterStock = () => {
   return (
     <>
       <div className="grid grid-cols-2 divide-x">
-        <TableDownloader data={data} />
+        <DownloadProvider>
+          <HtmlTable data={data} />
+        </DownloadProvider>
         <ParseCsv setData={setData} />
       </div>
     </>
