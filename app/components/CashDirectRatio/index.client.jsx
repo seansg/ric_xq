@@ -54,58 +54,66 @@ const CashDirectRatio = () => {
   const handleChangeDays = useCallback((e) => {
     setCloseDays(e.target.value)
   }, [])
+  const [fetching, setFetching] = useState(false)
 
   const onClick = useCallback(async () => {
-    const stocks = await getTotalStocks(closeDays, curDate)
-    latestDateRef.current = lodash.max(Object.keys(stocks))
+    setFetching(true)
+    try {
+      const stocks = await getTotalStocks(closeDays, curDate)
+      latestDateRef.current = lodash.max(Object.keys(stocks))
 
-    const curData = stocks[latestDateRef.current]
-    const cur = lodash.transform(curData, (sub, row) => {
-      sub[row[0]] = row[row.length - 1]
-      return sub
-    }, {})
+      const curData = stocks[latestDateRef.current]
+      const cur = lodash.transform(curData, (sub, row) => {
+        sub[row[0]] = row[row.length - 1]
+        return sub
+      }, {})
 
-    const colorBar = lodash.transform(stocks[latestDateRef.current], (obj, row) => {
-      obj[row[0]] = row[4] > 0 ? '#ff0000' : '#008000'
-      return obj
-    }, {})
+      const colorBar = lodash.transform(stocks[latestDateRef.current], (obj, row) => {
+        obj[row[0]] = row[4] > 0 ? '#ff0000' : '#008000'
+        return obj
+      }, {})
 
-    const trans = Object.keys(stocks).sort().map((date => lodash.transform(stocks[date], (sub, row) => {
-      sub[row[0]] = row[row.length - 1]
-      return sub
-    }, {})))
+      const trans = Object.keys(stocks).sort().map((date => lodash.transform(stocks[date], (sub, row) => {
+        sub[row[0]] = row[row.length - 1]
+        return sub
+      }, {})))
 
-    const sum = lodash.transform(trans, (obj, tran) => {
-      Object.keys(tran).forEach(k => {
-        if (!obj[k]) obj[k] = toDecimal('0')
-        obj[k] = obj[k].add(toDecimal(tran[k]))
-      })
-      return obj
-    }, {})
+      const sum = lodash.transform(trans, (obj, tran) => {
+        Object.keys(tran).forEach(k => {
+          if (!obj[k]) obj[k] = toDecimal('0')
+          obj[k] = obj[k].add(toDecimal(tran[k]))
+        })
+        return obj
+      }, {})
 
 
-    const avg = lodash.transform(Object.keys(sum), (obj, k) => {
-      obj[k] = sum[k].div(closeDays)
-    }, {})
+      const avg = lodash.transform(Object.keys(sum), (obj, k) => {
+        obj[k] = sum[k].div(closeDays)
+      }, {})
 
-    const dif = lodash.transform(Object.keys(avg), (obj, k) => {
-      const val = toDecimal(cur[k]).minus(avg[k]).div(avg[k]).times(100)
-      if (Math.abs(val) > 10) {
-        obj[k] = val
-      }
-    }, {})
+      const dif = lodash.transform(Object.keys(avg), (obj, k) => {
+        const val = toDecimal(cur[k]).minus(avg[k]).div(avg[k]).times(100)
+        if (Math.abs(val) > 10) {
+          obj[k] = val
+        }
+      }, {})
 
-    const sorted = Object.entries(dif).sort((a, b) => b[1] - a[1]);
+      const sorted = Object.entries(dif).sort((a, b) => b[1] - a[1]);
 
-    const sortedTrans = lodash.transform(sorted, (ary, row) => {
-      ary.push({
-        key: row[0].replace('類指數', ''),
-        value: row[1],
-        color: colorBar[row[0]]
-      })
-      return ary
-    }, [])
-    setStat(sortedTrans)
+      const sortedTrans = lodash.transform(sorted, (ary, row) => {
+        ary.push({
+          key: row[0].replace('類指數', ''),
+          value: row[1],
+          color: colorBar[row[0]]
+        })
+        return ary
+      }, [])
+      setStat(sortedTrans)
+    } catch (e) {
+      alert('error')
+    } finally {
+      setFetching(false)
+    }
   }, [closeDays, curDate])
 
   const filename = `${latestDateRef.current} 近${closeDays}日成交比重差 %`
@@ -153,7 +161,10 @@ const CashDirectRatio = () => {
           />
         </div>
         <div className='m-2.5 mb-0'>
-          <button className='px-5 py-2.5 bg-[#1da1f2] text-white rounded' onClick={onClick}>Fetch Data</button>
+          {
+            fetching ? <button className='px-5 py-2.5 bg-[#1da1f2] text-white rounded' onClick={() => null }>Loading...</button> :
+            <button className='px-5 py-2.5 bg-[#1da1f2] text-white rounded' onClick={onClick}>Fetch Data</button>
+          }
         </div>
       </div>
       {
