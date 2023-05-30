@@ -1,5 +1,6 @@
 import stylesheet from "~/tailwind.css";
 import 'flowbite';
+
 import {
   Links,
   LiveReload,
@@ -8,6 +9,7 @@ import {
   Scripts,
   ScrollRestoration,
 } from "@remix-run/react";
+import Nav from '~/components/Nav'
 
 export const links = () => [
   { rel: "stylesheet", href: stylesheet },
@@ -23,6 +25,7 @@ export default function App() {
         <Links />
       </head>
       <body>
+        <Nav />
         <Outlet />
         <ScrollRestoration />
         <Scripts />

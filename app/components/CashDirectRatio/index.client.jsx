@@ -4,6 +4,7 @@ import DownloadProvider from '~c/DownloadProvider'
 import Chart from './Chart'
 import { toDecimal } from '~/utils';
 import axios from 'axios'
+import DatePicker from '~c/DatePicker';
 
 const calculCashDirectRatio = (csv, date, dealAmount ) => {
   const total = toDecimal(dealAmount[date])
@@ -17,11 +18,12 @@ const calculCashDirectRatio = (csv, date, dealAmount ) => {
 
 const todayDate = new Date().toISOString().slice(0, 10).replaceAll('-', '')
 
-const getTotalAmount = async (closeDays) => {
+const getTotalAmount = async (closeDays, curDate) => {
   const dataset = {}
+  console.log(curDate)
   let i = 0
   while (Object.keys(dataset).length < closeDays) {
-    const { data } = await axios.get(`https://www.twse.com.tw/exchangeReport/MI_INDEX?date=${todayDate - i}&type=MS&response=json`)
+    const { data } = await axios(`/api/v1/mi-index/${curDate - i}`)
     if (data.date) {
       dataset[data.date] = toDecimal(data.data7[0][1]).toString()
     }
@@ -30,13 +32,13 @@ const getTotalAmount = async (closeDays) => {
   return dataset
 }
 
-const getTotalStocks = async (closeDays, dealAmount) => {
+const getTotalStocks = async (closeDays, curDate) => {
+  const dealAmount = await getTotalAmount(closeDays, curDate)
   const dataset = {}
   let i = 0
   while (Object.keys(dataset).length < closeDays) {
-    const { data } = await axios.get(`https://www.twse.com.tw/pcversion/exchangeReport/BFIAMU?date=${todayDate - i}&type=MS&response=json`)
+    const { data } = await axios(`/api/v1/bfiamu/${curDate - i}`)
     if (data.date) {
-
       dataset[data.date] = calculCashDirectRatio(data.data, data.date, dealAmount)
     }
     i++
@@ -45,6 +47,8 @@ const getTotalStocks = async (closeDays, dealAmount) => {
 }
 
 const CashDirectRatio = () => {
+  const latestDateRef = useRef(todayDate)
+  const [curDate, setCurDate] = useState(todayDate)
   const [stat, setStat] = useState([])
   const [closeDays, setCloseDays] = useState(3)
   const handleChangeDays = useCallback((e) => {
@@ -52,17 +56,16 @@ const CashDirectRatio = () => {
   }, [])
 
   const onClick = useCallback(async () => {
-    const dealAmount = await getTotalAmount(closeDays)
-    const stocks = await getTotalStocks(closeDays, dealAmount)
+    const stocks = await getTotalStocks(closeDays, curDate)
+    latestDateRef.current = lodash.max(Object.keys(stocks))
 
-    const curData = calculCashDirectRatio(stocks[todayDate], todayDate, dealAmount)
-
+    const curData = stocks[latestDateRef.current]
     const cur = lodash.transform(curData, (sub, row) => {
       sub[row[0]] = row[row.length - 1]
       return sub
     }, {})
 
-    const colorBar = lodash.transform(stocks[todayDate], (obj, row) => {
+    const colorBar = lodash.transform(stocks[latestDateRef.current], (obj, row) => {
       obj[row[0]] = row[4] > 0 ? '#ff0000' : '#008000'
       return obj
     }, {})
@@ -103,9 +106,9 @@ const CashDirectRatio = () => {
       return ary
     }, [])
     setStat(sortedTrans)
-  }, [closeDays])
+  }, [closeDays, curDate])
 
-  const filename = `${todayDate} 近${closeDays}日成交比重差 %`
+  const filename = `${latestDateRef.current} 近${closeDays}日成交比重差 %`
 
   const data = {
     datasets: [
@@ -127,6 +130,16 @@ const CashDirectRatio = () => {
     <div className='m-5'>
       <div className='flex items-center text-5xl font-extrabold'>成交比重差</div>
       <div className='m-5 w-100 flex items-end'>
+        <div className='mr-2.5'>
+          <label className="block mb-2 text-sm font-medium text-gray-900">日期</label>
+          <DatePicker
+            onChange={(date) => {
+              date.setMinutes(new Date().getMinutes())
+              date.setHours(new Date().getHours())
+              setCurDate(date.toISOString().slice(0, 10).replaceAll('-', ''))
+            }}
+          />
+        </div>
         <div>
           <label htmlFor="days" className="block mb-2 text-sm font-medium text-gray-900">近幾日</label>
           <input type="number" id="days"
