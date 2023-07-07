@@ -1,0 +1,43 @@
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["jsonProtocol"]
+}
+ 
+datasource db {
+  provider = "postgresql"
+  url = env("POSTGRES_PRISMA_URL") // uses connection pooling
+  directUrl = env("POSTGRES_URL_NON_POOLING") // uses a direct connection
+  shadowDatabaseUrl = env("POSTGRES_URL_NON_POOLING") // used for migrations
+}
+
+//買 賣 股利 股息 增資 減資
+model TransactionsType {
+  id Int @id @default(autoincrement())
+  name String
+}
+
+//etf stock 當沖
+model TradeType {
+  id Int @id @default(autoincrement())
+  name String
+  tax Decimal
+}
+
+model Fee {
+  id Int @id @default(autoincrement())
+  discount Decimal
+}
+
+model Transactions {
+  id Int @id @default(cuid())
+  code String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  date Date
+  price Decimal
+  shares Number
+  fee Decimal
+  tax Decimal
+  tradeType String
+  transactionType String 
+}
