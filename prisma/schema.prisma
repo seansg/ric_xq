@@ -29,13 +29,13 @@ model Fee {
 }
 
 model Transactions {
-  id Int @id @default(cuid())
+  id Int @id @default(autoincrement())
   code String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  date Date
+  date DateTime
   price Decimal
-  shares Number
+  shares Int
   fee Decimal
   tax Decimal
   tradeType String

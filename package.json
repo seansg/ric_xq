@@ -5,7 +5,9 @@
     "build": "remix build",
     "dev": "remix dev",
     "start": "remix-serve build",
-    "typecheck": "tsc"
+    "typecheck": "tsc",
+    "generate": "prisma generate",
+    "migrate": "prisma migrate"
   },
   "dependencies": {
     "@prisma/client": "^4.16.2",
