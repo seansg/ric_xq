@@ -58,7 +58,7 @@ const calMonthAvg = (rows, currentPrice, currentDate) => {
     if (row[0] === currentDate) return ary
     if (ary.length === avgDays - 1) return ary
 
-    ary.push(new Decimal(row[4]))
+    ary.push(new Decimal(row[4] === '-' ? row[3] : row[4]))
     return ary
   }, []).reduce((sum, close) => sum.add(close)).add(new Decimal(currentPrice)).div(avgDays)
 }
@@ -109,27 +109,26 @@ const getCurrentStockPrice = async (stocks) => {
   }
 }
 
-// [stock, name, price, avgprice, highest, highest %, action]
+// [stock, name, price, avgprice, highest, highest %, today low, action]
 const calculateStragey = (stocks, currentPrice, historyData) => {
   return _.transform(stocks, (ary, stockNo) => {
     const newRow = []
     newRow.push(stockNo)
     if (_.isEmpty(currentPrice[stockNo]) || _.isEmpty(historyData[stockNo])) {
-      newRow.push(['', '', '', '', ''])
+      newRow.push(['', '', '', '', '', ''])
     } else {
-      console.log(currentPrice)
       const row = currentPrice[stockNo]
       newRow.push(row[5])
       newRow.push(row[4])
-      console.log(historyData[stockNo], row[4], row[0])
       const avgPrice = calMonthAvg(historyData[stockNo], row[4], row[0]).toString()
       newRow.push(avgPrice)
 
       const highestPrice = calHightest(historyData[stockNo], row[2])
-      newRow.push(highestPrice)
-      const highPercent = ((row[4] - highestPrice) / highestPrice).toFixed(2)
+      newRow.push(Number(highestPrice))
+      const highPercent = ((row[3] - highestPrice) / highestPrice).toFixed(2)
       newRow.push(highPercent)
-      const action = (avgPrice > row[4] || (highPercent > 0.05)) ? '賣出' : '持有'
+      newRow.push(Number(row[3]))
+      const action = (avgPrice > row[3] || (highPercent < 0.05)) ? '賣出' : '持有'
       newRow.push(action)
     }
 
@@ -204,6 +203,7 @@ const CalSellout = () => {
               <th scope="col" className="px-6 py-3">現價</th>
               <th scope="col" className="px-6 py-3">{`<${avgDays}天均價`}</th>
               <th scope="col" className="px-6 py-3">最高價</th>
+              <th scope="col" className="px-6 py-3">今日最低價</th>
               <th scope="col" className="px-6 py-3">建議</th>
             </tr>
           </thead>
@@ -215,8 +215,9 @@ const CalSellout = () => {
                   <td className='px-6 py-4'>{r[1]}</td>
                   <td className='px-6 py-4'>{r[2]}</td>
                   <td className={classnames('px-6 py-4', { 'text-rose-600 font-semibold': r[3] > r[2] })}>{r[3]}</td>
-                  <td className={classnames('px-6 py-4', { 'text-rose-600 font-semibold': r[5] <= -0.05 })}>{r[4]}({r[5] * 100}%)</td>
-                  <td className={classnames('px-6 py-4', { 'text-rose-600 font-semibold': r[6] === '賣出' })}>{r[6]}</td>
+                  <td className={classnames('px-6 py-4', { 'text-rose-600 font-semibold': r[5] <= -0.05 })}>{r[4]}({(r[5] * 100).toFixed(2)}%)</td>
+                  <td className='px-6 py-4'>{r[6]}</td>
+                  <td className={classnames('px-6 py-4', { 'text-rose-600 font-semibold': r[7] === '賣出' })}>{r[7]}</td>
                 </tr>
               ))
             }
