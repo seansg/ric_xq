@@ -17,6 +17,7 @@ const TitleField = ({ onChange }) => {
         <option value="型態首選-動能追追">型態首選-動能追追</option>
         <option value="年輕人首選 - 多方">年輕人首選 - 多方</option>
         <option value="年輕人首選 - 空方">年輕人首選 - 空方</option>
+        <option value="大老闆首選 - 多排">大老闆首選 - 多排</option>
       </select>
     </>
   )
