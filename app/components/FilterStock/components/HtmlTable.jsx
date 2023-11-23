@@ -30,7 +30,7 @@ const HtmlTable = ({ data }) => {
                   <tr>
                     {
                       data.headers.map((header) => (
-                        <th key={header} className='p-2.5 text-center'>{header}</th>
+                        <th key={header} className='p-2.5 text-center'>{header.replaceAll('"', '')}</th>
                       ))
                     }
                   </tr>
@@ -41,7 +41,7 @@ const HtmlTable = ({ data }) => {
                         <tr key={index} className={data.rowClass && data.rowClass[index]}>
                           {
                             row.map((col, i) => (
-                              <td className='p-2.5 text-center' key={col}>{col}</td>
+                              <td className='p-2.5 text-center' key={col}>{col.replaceAll('"', '')}</td>
                             ))
                           }
                         </tr>
