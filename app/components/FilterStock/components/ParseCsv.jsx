@@ -32,12 +32,14 @@ const ParseCsv = ({ setData }) => {
           }),
           rows: rowData,
           rowClass: rowData.map((row) => {
+            const value = parseFloat(row[3].replace(/"/g, ''))
             return cx('border-b', {
-                      'bg-red-600 text-white': Number(row[3]) >= 7,
-                      'bg-red-100':  Number(row[3]) > 0 &&  Number(row[3]) < 7,
-                      'bg-green-100':  Number(row[3]) < 0 &&  Number(row[3]) > -7,
-                      'bg-green-600 text-white':  Number(row[3]) < -7,
-                    })}
+              'bg-red-600 text-white': value >= 7,
+              'bg-red-100': value > 0 && value < 7,
+              'bg-green-100': value < 0 && value > -7,
+              'bg-green-600 text-white': value < -7,
+            })
+          }
           )
         })
       }
